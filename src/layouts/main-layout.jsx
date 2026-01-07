@@ -10,7 +10,7 @@ function mainLayout() {
 
         <div>
             <footer className="bg-neutral text-neutral-content p-10 flex items-center justify-center">
-                <b>@2025 Kelompok 3</b>
+                <b><font>Copyright © Kelompok 3</font></b>
             </footer>
         </div>
     </div>

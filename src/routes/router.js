@@ -11,7 +11,27 @@ const router = createBrowserRouter([
                 index : true,
                 lazy : {
                     Component : async() => {
+                        const component = await import("../pages/home/home-page")
+
+                        return component.default
+                    }
+                }
+            },
+            {
+                path : "predict-food",
+                lazy : {
+                    Component : async() => {
                         const component = await import("../pages/predict-food/predict-food-page")
+
+                        return component.default
+                    }
+                }
+            },
+            {
+                path : "predict-weight",
+                lazy : {
+                    Component : async() => {
+                        const component = await import("../pages/predict-weight/predict-weight-page")
 
                         return component.default
                     }
