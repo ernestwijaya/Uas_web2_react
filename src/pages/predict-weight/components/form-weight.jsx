@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import bgGym from "../../../assets/gym.jpeg";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -24,21 +25,17 @@ function FormWeight({ isLoading, setLoading, setPredictResult }) {
   };
 
   const calculateIdealWeight = (height, gender, age) => {
-    // Rumus Broca yang dimodifikasi
-    let idealWeight = (height - 100) * 0.9;
-
-    // Penyesuaian berdasarkan jenis kelamin
-    if (gender === "female") {
-      idealWeight -= idealWeight * 0.1; // Kurangi 10% untuk perempuan
+    // Formula untuk menghitung berat badan ideal
+    // Pria: Berat Ideal = Tinggi Badan - 100
+    // Wanita: Berat Ideal = Tinggi Badan - 105
+    let idealWeight;
+    
+    if (gender === "male") {
+      idealWeight = height - 100;
+    } else {
+      idealWeight = height - 105;
     }
-
-    // Penyesuaian untuk usia
-    if (age > 40) {
-      idealWeight += (age - 40) * 0.1; // Tambah 0.1 kg per tahun setelah 40
-    } else if (age < 18) {
-      idealWeight *= 0.95; // Kurangi 5% untuk usia muda
-    }
-
+    
     return Math.round(idealWeight * 10) / 10;
   };
 
@@ -127,7 +124,7 @@ function FormWeight({ isLoading, setLoading, setPredictResult }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="stroke-current shrink-0 h-6 w-6"
@@ -231,6 +228,19 @@ function FormWeight({ isLoading, setLoading, setPredictResult }) {
           step="0.1"
         />
       </div>
+
+      {/* Preview Data */}
+      {(formData.height || formData.age || formData.currentWeight) && (
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="font-semibold text-sm mb-3">📋 Preview Data:</p>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div><span className="font-semibold">Tinggi Badan:</span> {formData.height || "-"} cm</div>
+            <div><span className="font-semibold">Jenis Kelamin:</span> {formData.gender === "male" ? "Laki-laki" : "Perempuan"}</div>
+            <div><span className="font-semibold">Usia:</span> {formData.age || "-"} tahun</div>
+            <div><span className="font-semibold">Berat Saat Ini:</span> {formData.currentWeight || "-"} kg</div>
+          </div>
+        </div>
+      )}
 
       <button
         type="submit"

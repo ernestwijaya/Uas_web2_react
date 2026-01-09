@@ -1,4 +1,5 @@
 import { useState } from "react";
+import bgTeio from '../../assets/home.png';
 
 const NEWS_DATA = [
   {
@@ -48,7 +49,7 @@ function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100" style={{backgroundImage: `url(${bgTeio})`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-12">
         <div className="max-w-6xl mx-auto px-4">

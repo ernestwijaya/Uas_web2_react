@@ -33,7 +33,7 @@ function FormPredict({ isLoading, setLoading, setPredictResult}) {
         vitamin_c: 0
     });
 
-    const [successMessage, setSuccessMessage] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);    const [successMessage, setSuccessMessage] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
 
     const handleFoodSelect = (foodId) => {
@@ -69,6 +69,33 @@ function FormPredict({ isLoading, setLoading, setPredictResult}) {
         setErrorMessage(null);
         setSuccessMessage(null);
 
+        // Validasi input - pastikan semua field terisi
+        if (!form.food_name || form.food_name.trim() === "") {
+            setErrorMessage("❌ Nama makanan harus diisi!");
+            setLoading(false);
+            return;
+        }
+
+        if (!form.category || form.category.trim() === "") {
+            setErrorMessage("❌ Kategori makanan harus diisi!");
+            setLoading(false);
+            return;
+        }
+
+        if (form.calories <= 0 || form.protein < 0 || form.carbs < 0 || form.fat < 0) {
+            setErrorMessage("❌ Nilai nutrisi harus berisi angka positif!");
+            setLoading(false);
+            return;
+        }
+
+        // Jika sudah dalam proses submit, jangan submit lagi
+        if (isSubmitting) {
+            setErrorMessage("❌ Tunggu hingga proses selesai...");
+            return;
+        }
+
+        setIsSubmitting(true);
+
         try {
             console.log("Mengirim data:", form);
             const response = await http.post("/predict", form);
@@ -98,11 +125,30 @@ function FormPredict({ isLoading, setLoading, setPredictResult}) {
                 
                 if (dbResponse.data.success) {
                     setSuccessMessage('✅ Prediksi berhasil disimpan ke database');
+                    // Reset form setelah berhasil
+                    setForm({
+                        food_name: "",
+                        category: "",
+                        calories: 0,
+                        protein: 0,
+                        carbs: 0,
+                        fat: 0,
+                        iron: 0,
+                        vitamin_c: 0
+                    });
+                    setSelectedFoodId(null);
                     setTimeout(() => setSuccessMessage(null), 4000);
+                } else {
+                    setErrorMessage(`❌ ${dbResponse.data.error || 'Gagal menyimpan ke database'}`);
                 }
             } catch (dbError) {
                 console.error('Error saving to database:', dbError);
-                setErrorMessage('Prediksi berhasil, tetapi gagal menyimpan ke database');
+                // Cek apakah response dari backend
+                if (dbError.response?.data?.error) {
+                    setErrorMessage(`❌ ${dbError.response.data.error}`);
+                } else {
+                    setErrorMessage('❌ Gagal menghubungi server untuk menyimpan data');
+                }
             }
         } catch (error) {
             console.error("Error detail:", error);
@@ -119,6 +165,7 @@ function FormPredict({ isLoading, setLoading, setPredictResult}) {
             setErrorMessage(errorMsg);
         } finally {
             setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -270,9 +317,9 @@ function FormPredict({ isLoading, setLoading, setPredictResult}) {
             <button
                 type="submit"
                 className="w-full bg-blue-600 text-white py-2 mt-6 rounded-xl hover:bg-blue-700 text-sm disabled:bg-gray-400"
-                disabled={isLoading || !form.food_name}
+                disabled={isLoading || isSubmitting || !form.food_name}
             >
-                {isLoading ? (
+                {isLoading || isSubmitting ? (
                     <>
                         <span className="loading loading-spinner loading-sm mr-2"></span>
                         Memproses...

@@ -12,7 +12,6 @@ app.use(bodyParser.json());
 
 // Helper functions untuk prediksi gizi
 function calculateNutritionScore(protein, fat, carbs, calories) {
-  // Scoring 0-100 berdasarkan keseimbangan nutrisi
   let score = 50;
   
   if (protein > 10) score += 10;
@@ -48,10 +47,9 @@ try {
 // Food Predictions
 app.post('/api/predict', async (req, res) => {
   try {
-    const { protein, fat, carbs, calories, food_name, category } = req.body;
+    const { protein, fat, carbs, calories, food_name, category, iron, vitamin_c } = req.body;
     const connection = await pool.getConnection();
 
-    // Prediksi gizi makanan (bisa disesuaikan dengan logic bisnis)
     const predictedNutrition = {
       food_name: food_name,
       category: category,
@@ -59,14 +57,15 @@ app.post('/api/predict', async (req, res) => {
       fat: fat,
       carbs: carbs,
       calories: calories,
+      iron: iron,
+      vitamin_c: vitamin_c,
       nutritionScore: calculateNutritionScore(protein, fat, carbs, calories),
       recommendation: getNutritionRecommendation(protein, fat, carbs, calories)
     };
 
-    // Simpan ke database
     await connection.execute(
-      'INSERT INTO food_predictions (protein, fat, carbs, calories, predicted_nutrition) VALUES (?, ?, ?, ?, ?)',
-      [protein, fat, carbs, calories, JSON.stringify(predictedNutrition)]
+      'INSERT INTO food_predictions (food_name, category, protein, fat, carbs, calories, iron, vitamin_c, predicted_nutrition) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [food_name, category, protein, fat, carbs, calories, iron, vitamin_c, JSON.stringify(predictedNutrition)]
     );
 
     connection.release();
@@ -85,21 +84,43 @@ app.post('/api/predict', async (req, res) => {
 app.post('/api/food-predictions', async (req, res) => {
   try {
     const { food_name, category, protein, fat, carbs, calories, iron, vitamin_c, predictedNutrition } = req.body;
+    
+    // Validasi input
+    if (!food_name || food_name.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        error: "Nama makanan tidak boleh kosong"
+      });
+    }
+
+    if (!category || category.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        error: "Kategori makanan tidak boleh kosong"
+      });
+    }
+
+    if (calories <= 0 || protein < 0 || fat < 0 || carbs < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Nilai nutrisi harus berupa angka positif"
+      });
+    }
+
     const connection = await pool.getConnection();
 
-    await connection.execute(
-      'INSERT INTO food_predictions (food_name, category, protein, fat, carbs, calories, iron, vitamin_c, predicted_nutrition) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [food_name, category, protein, fat, carbs, calories, iron, vitamin_c, JSON.stringify(predictedNutrition)]
-    );
+    
 
     connection.release();
+    
+    console.log('✅ Data berhasil disimpan:', { food_name, category, calories });
 
     res.json({
       success: true,
       message: 'Prediksi gizi makanan berhasil disimpan ke database'
     });
   } catch (error) {
-    console.error('Error saving food prediction:', error);
+    console.error('❌ Error saving food prediction:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

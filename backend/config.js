@@ -22,8 +22,8 @@ export async function initDatabase() {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS food_predictions (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        food_name VARCHAR(255),
-        category VARCHAR(100),
+        food_name VARCHAR(255) NOT NULL,
+        category VARCHAR(100) NOT NULL,
         calories FLOAT,
         protein FLOAT,
         carbs FLOAT,
@@ -31,7 +31,8 @@ export async function initDatabase() {
         iron FLOAT,
         vitamin_c FLOAT,
         predicted_nutrition JSON,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_food (food_name, category, calories, protein, fat, carbs)
       )
     `);
 

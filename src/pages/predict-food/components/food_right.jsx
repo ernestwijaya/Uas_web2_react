@@ -14,7 +14,7 @@ function FoodRight({ predictResult }) {
             {/* Status Kesehatan */}
             {(() => {
                 const totalEnergy = predictResult.energy_calculation?.total_energy_calculated || 0;
-                const isHealthy = totalEnergy <= 1000;
+                const isHealthy = totalEnergy >= 1000;
                 const healthStatus = isHealthy ? "Sehat" : "Tidak Sehat";
                 
                 return (

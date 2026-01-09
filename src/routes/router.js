@@ -36,6 +36,26 @@ const router = createBrowserRouter([
                         return component.default
                     }
                 }
+            },
+            {
+                path : "history",
+                lazy : {
+                    Component : async() => {
+                        const component = await import("../pages/history/history-page")
+
+                        return component.default
+                    }
+                }
+            },
+            {
+                path : "about",
+                lazy : {
+                    Component : async() => {
+                        const component = await import("../pages/about/about-page")
+
+                        return component.default
+                    }
+                }
             }
 
         ]
