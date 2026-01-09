@@ -127,15 +127,6 @@ function HomePage() {
           </div>
         )}
       </div>
-
-      {/* Footer Section */}
-      <div className="bg-gray-100 mt-12 py-8">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-gray-600">
-            💡 Semua informasi kesehatan di sini bersumber dari ahli profesional. Namun, selalu konsultasikan dengan dokter untuk diagnosis dan treatment yang akurat.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

@@ -9,6 +9,12 @@ function mainLayout() {
         </div>
 
         <div>
+            <div className="bg-gray-100 py-8 text-center">
+                <p className="text-gray-600 text-sm">
+                    💡 Semua informasi kesehatan di sini bersumber dari ahli profesional. Namun, selalu konsultasikan dengan dokter untuk diagnosis dan treatment yang akurat.
+                </p>
+            </div>
+
             <footer className="bg-neutral text-neutral-content p-10 flex items-center justify-center">
                 <b><font>Copyright © Kelompok 3</font></b>
                 <p>
