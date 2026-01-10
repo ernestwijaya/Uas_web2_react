@@ -65,104 +65,51 @@ function FormPredict({ isLoading, setLoading, setPredictResult}) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
         setLoading(true);
         setErrorMessage(null);
         setSuccessMessage(null);
 
-        // Validasi input - pastikan semua field terisi
-        if (!form.food_name || form.food_name.trim() === "") {
-            setErrorMessage("❌ Nama makanan harus diisi!");
-            setLoading(false);
-            return;
-        }
-
-        if (!form.category || form.category.trim() === "") {
-            setErrorMessage("❌ Kategori makanan harus diisi!");
-            setLoading(false);
-            return;
-        }
-
-        if (form.calories <= 0 || form.protein < 0 || form.carbs < 0 || form.fat < 0) {
-            setErrorMessage("❌ Nilai nutrisi harus berisi angka positif!");
-            setLoading(false);
-            return;
-        }
-
-        // Jika sudah dalam proses submit, jangan submit lagi
-        if (isSubmitting) {
-            setErrorMessage("❌ Tunggu hingga proses selesai...");
-            return;
-        }
-
-        setIsSubmitting(true);
-
         try {
             console.log("Mengirim data:", form);
+
+            // ✅ HANYA SATU KALI REQUEST
             const response = await http.post("/predict", form);
-            console.log("Full Response:", response);
-            
-            let result = response.data;
-            if (response.data.data) {
-                result = response.data.data;
-            }
-            
-            console.log("Hasil prediksi:", result);
+
+            const result = response.data.data || response.data;
+
             setPredictResult(result);
-            setSuccessMessage('Prediksi makanan berhasil dilakukan!');
-            
-            try {
-                const dbResponse = await axios.post(`${API_URL}/food-predictions`, {
-                    food_name: form.food_name,
-                    category: form.category,
-                    protein: form.protein,
-                    fat: form.fat,
-                    carbs: form.carbs,
-                    calories: form.calories,
-                    iron: form.iron,
-                    vitamin_c: form.vitamin_c,
-                    predictedNutrition: result
-                });
-                
-                if (dbResponse.data.success) {
-                    setSuccessMessage('✅ Prediksi berhasil disimpan ke database');
-                    // Reset form setelah berhasil
-                    setForm({
-                        food_name: "",
-                        category: "",
-                        calories: 0,
-                        protein: 0,
-                        carbs: 0,
-                        fat: 0,
-                        iron: 0,
-                        vitamin_c: 0
-                    });
-                    setSelectedFoodId(null);
-                    setTimeout(() => setSuccessMessage(null), 4000);
-                } else {
-                    setErrorMessage(`❌ ${dbResponse.data.error || 'Gagal menyimpan ke database'}`);
-                }
-            } catch (dbError) {
-                console.error('Error saving to database:', dbError);
-                // Cek apakah response dari backend
-                if (dbError.response?.data?.error) {
-                    setErrorMessage(`❌ ${dbError.response.data.error}`);
-                } else {
-                    setErrorMessage('❌ Gagal menghubungi server untuk menyimpan data');
-                }
-            }
+            setSuccessMessage("✅ Prediksi makanan berhasil disimpan");
+
+            // Reset form
+            setForm({
+                food_name: "",
+                category: "",
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                iron: 0,
+                vitamin_c: 0
+            });
+            setSelectedFoodId(null);
+
+            setTimeout(() => setSuccessMessage(null), 4000);
+
         } catch (error) {
             console.error("Error detail:", error);
-            
+
             let errorMsg = "Gagal melakukan prediksi";
-            if (error.response?.status === 404) {
-                errorMsg = "Backend server tidak tersedia. Pastikan backend sudah berjalan di http://localhost:5000";
-            } else if (error.response?.data?.message) {
-                errorMsg = error.response.data.message;
+            if (error.response?.data?.error) {
+                errorMsg = error.response.data.error;
             } else if (error.message) {
                 errorMsg = error.message;
             }
-            
-            setErrorMessage(errorMsg);
+
+            setErrorMessage(`❌ ${errorMsg}`);
         } finally {
             setLoading(false);
             setIsSubmitting(false);

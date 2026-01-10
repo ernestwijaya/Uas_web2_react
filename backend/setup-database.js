@@ -5,7 +5,9 @@ dotenv.config();
 
 async function setupDatabase() {
   try {
-    // Connect to MySQL tanpa database terlebih dahulu
+    // =======================
+    // Connect ke MySQL (tanpa DB)
+    // =======================
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
@@ -15,34 +17,47 @@ async function setupDatabase() {
 
     console.log('✅ Connected to MySQL');
 
-    // Create database
-    await connection.execute(`CREATE DATABASE IF NOT EXISTS prediction_app`);
-    console.log('✅ Database "prediction_app" created');
+    // =======================
+    // Create Database
+    // =======================
+    await connection.execute(
+      `CREATE DATABASE IF NOT EXISTS prediction_app`
+    );
+    console.log('✅ Database "prediction_app" ready');
 
-    // Select database
     await connection.execute(`USE prediction_app`);
 
+    // =======================
+    // Drop tables (opsional, aman saat develop)
+    // =======================
+    await connection.execute(`DROP TABLE IF EXISTS food_predictions`);
+    await connection.execute(`DROP TABLE IF EXISTS weight_predictions`);
+
+    // =======================
     // Create food_predictions table
+    // =======================
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS food_predictions (
+      CREATE TABLE food_predictions (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        food_name VARCHAR(255),
-        category VARCHAR(100),
-        calories FLOAT,
-        protein FLOAT,
-        carbs FLOAT,
-        fat FLOAT,
-        iron FLOAT,
-        vitamin_c FLOAT,
+        food_name VARCHAR(255) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        calories FLOAT NOT NULL,
+        protein FLOAT NOT NULL,
+        carbs FLOAT NOT NULL,
+        fat FLOAT NOT NULL,
+        iron FLOAT DEFAULT 0,
+        vitamin_c FLOAT DEFAULT 0,
         predicted_nutrition JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Table "food_predictions" created');
 
+    // =======================
     // Create weight_predictions table
+    // =======================
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS weight_predictions (
+      CREATE TABLE weight_predictions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         height FLOAT NOT NULL,
         gender VARCHAR(20) NOT NULL,
@@ -57,11 +72,13 @@ async function setupDatabase() {
     console.log('✅ Table "weight_predictions" created');
 
     await connection.end();
-    console.log('\n✅ Database setup completed successfully!');
-    console.log('Now you can run: npm start\n');
+
+    console.log('\n🎉 Database setup completed successfully!');
+    console.log('👉 Sekarang jalankan: npm start\n');
     process.exit(0);
+
   } catch (error) {
-    console.error('❌ Error setting up database:', error.message);
+    console.error('❌ Error setting up database:', error);
     process.exit(1);
   }
 }

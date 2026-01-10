@@ -19,7 +19,7 @@ async function resetDatabase() {
     await connection.execute(`DROP TABLE IF EXISTS food_predictions`);
     console.log('✅ Table "food_predictions" deleted');
 
-    // Recreate with UNIQUE key
+    // Recreate without UNIQUE key
     await connection.execute(`
       CREATE TABLE food_predictions (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -32,11 +32,10 @@ async function resetDatabase() {
         iron FLOAT,
         vitamin_c FLOAT,
         predicted_nutrition JSON,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_food (food_name, category, calories, protein, fat, carbs)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Table "food_predictions" created dengan UNIQUE key');
+    console.log('✅ Table "food_predictions" created');
 
     await connection.end();
     console.log('\n✅ Database reset completed successfully!');

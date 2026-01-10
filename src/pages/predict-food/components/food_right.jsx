@@ -13,8 +13,8 @@ function FoodRight({ predictResult }) {
             
             {/* Status Kesehatan */}
             {(() => {
-                const totalEnergy = predictResult.energy_calculation?.total_energy_calculated || 0;
-                const isHealthy = totalEnergy >= 1000;
+                const nutritionScore = predictResult.nutritionScore || 0;
+                const isHealthy = nutritionScore >= 60;
                 const healthStatus = isHealthy ? "Sehat" : "Tidak Sehat";
                 
                 return (
@@ -23,40 +23,83 @@ function FoodRight({ predictResult }) {
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-red-100 text-red-700'
                     }`}>
-                        {healthStatus}
+                        {healthStatus} (Skor: {nutritionScore})
                     </div>
                 );
             })()}
             
             {/* Detail Informasi */}
             <div className="space-y-2 text-sm">
-                {/* Energy Calculation */}
-                {predictResult.energy_calculation?.total_energy_calculated && (
+                {/* Makanan Info */}
+                {predictResult.food_name && (
                     <div className="flex justify-between border-b pb-2">
-                        <span className="font-semibold text-gray-700">Total Energi:</span>
-                        <span className="text-gray-600">{predictResult.energy_calculation.total_energy_calculated} cal</span>
+                        <span className="font-semibold text-gray-700">Nama Makanan:</span>
+                        <span className="text-gray-600">{predictResult.food_name}</span>
                     </div>
                 )}
                 
-                {/* Food Info */}
-                {predictResult.food_info?.category && (
+                {predictResult.category && (
                     <div className="flex justify-between border-b pb-2">
-                        <span className="font-semibold text-gray-700">Kategori Makanan:</span>
-                        <span className="text-gray-600">{predictResult.food_info.category}</span>
+                        <span className="font-semibold text-gray-700">Kategori:</span>
+                        <span className="text-gray-600">{predictResult.category}</span>
                     </div>
                 )}
                 
-                {/* Nutrient Values */}
-                {predictResult.nutrient_values && (
-                    <>
-                        <div className="font-semibold text-gray-700 mt-3 pt-2 border-t">Nilai Nutrisi:</div>
-                        {Object.entries(predictResult.nutrient_values).map(([key, value]) => (
-                            <div key={key} className="flex justify-between pl-4">
-                                <span className="text-gray-700">{key}:</span>
-                                <span className="text-gray-600">{String(value)}</span>
-                            </div>
-                        ))}
-                    </>
+                {/* Nutrition Values */}
+                <div className="font-semibold text-gray-700 mt-3 pt-2 border-t">Nilai Nutrisi:</div>
+                
+                {predictResult.calories && (
+                    <div className="flex justify-between pl-4">
+                        <span className="text-gray-700">Kalori:</span>
+                        <span className="text-gray-600">{predictResult.calories} kcal</span>
+                    </div>
+                )}
+                
+                {predictResult.protein !== undefined && (
+                    <div className="flex justify-between pl-4">
+                        <span className="text-gray-700">Protein:</span>
+                        <span className="text-gray-600">{predictResult.protein} g</span>
+                    </div>
+                )}
+                
+                {predictResult.carbs !== undefined && (
+                    <div className="flex justify-between pl-4">
+                        <span className="text-gray-700">Karbohidrat:</span>
+                        <span className="text-gray-600">{predictResult.carbs} g</span>
+                    </div>
+                )}
+                
+                {predictResult.fat !== undefined && (
+                    <div className="flex justify-between pl-4">
+                        <span className="text-gray-700">Lemak:</span>
+                        <span className="text-gray-600">{predictResult.fat} g</span>
+                    </div>
+                )}
+                
+                {predictResult.iron !== undefined && (
+                    <div className="flex justify-between pl-4">
+                        <span className="text-gray-700">Besi:</span>
+                        <span className="text-gray-600">{predictResult.iron} mg</span>
+                    </div>
+                )}
+                
+                {predictResult.vitamin_c !== undefined && (
+                    <div className="flex justify-between pl-4">
+                        <span className="text-gray-700">Vitamin C:</span>
+                        <span className="text-gray-600">{predictResult.vitamin_c} mg</span>
+                    </div>
+                )}
+                
+                {/* Rekomendasi */}
+                {predictResult.recommendation && Array.isArray(predictResult.recommendation) && (
+                    <div className="mt-3 pt-2 border-t">
+                        <div className="font-semibold text-gray-700 mb-2">Rekomendasi:</div>
+                        <ul className="pl-4 space-y-1">
+                            {predictResult.recommendation.map((rec, idx) => (
+                                <li key={idx} className="text-gray-600 text-xs">• {rec}</li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
             </div>
         </div>

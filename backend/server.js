@@ -6,197 +6,234 @@ import { pool, initDatabase } from './config.js';
 const app = express();
 const PORT = 5000;
 
+// =======================
 // Middleware
+// =======================
 app.use(cors());
 app.use(bodyParser.json());
 
-// Helper functions untuk prediksi gizi
+// =======================
+// Helper Functions
+// =======================
 function calculateNutritionScore(protein, fat, carbs, calories) {
   let score = 50;
-  
+
   if (protein > 10) score += 10;
   if (fat > 5 && fat < 30) score += 15;
   if (carbs > 20) score += 15;
   if (calories > 100 && calories < 500) score += 10;
-  
+
   return Math.min(score, 100);
 }
 
 function getNutritionRecommendation(protein, fat, carbs, calories) {
   const recommendations = [];
-  
+
   if (protein < 5) recommendations.push('Tambahkan sumber protein');
   if (fat > 30) recommendations.push('Kurangi lemak');
   if (carbs < 10) recommendations.push('Tambahkan karbohidrat');
   if (calories < 50) recommendations.push('Kalori terlalu rendah');
   if (calories > 500) recommendations.push('Kalori cukup tinggi');
-  
-  return recommendations.length > 0 ? recommendations : ['Nutrisi seimbang'];
+
+  return recommendations.length > 0
+    ? recommendations
+    : ['Nutrisi seimbang'];
 }
 
-// Initialize database
+// =======================
+// Init Database
+// =======================
 try {
   await initDatabase();
 } catch (error) {
-  console.error('Failed to initialize database:', error);
+  console.error('❌ Failed to initialize database:', error);
   process.exit(1);
 }
 
-// Routes
+// =======================
+// ROUTES
+// =======================
 
-// Food Predictions
+// =======================
+// Food Prediction (FIXED)
+// =======================
 app.post('/api/predict', async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
-    const { protein, fat, carbs, calories, food_name, category, iron, vitamin_c } = req.body;
-    const connection = await pool.getConnection();
+    const {
+      food_name,
+      category,
+      protein,
+      fat,
+      carbs,
+      calories,
+      iron,
+      vitamin_c
+    } = req.body;
+
+    // Validasi dasar
+    if (!food_name || !category) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nama makanan dan kategori wajib diisi'
+      });
+    }
 
     const predictedNutrition = {
-      food_name: food_name,
-      category: category,
-      protein: protein,
-      fat: fat,
-      carbs: carbs,
-      calories: calories,
-      iron: iron,
-      vitamin_c: vitamin_c,
+      food_name,
+      category,
+      protein,
+      fat,
+      carbs,
+      calories,
+      iron,
+      vitamin_c,
       nutritionScore: calculateNutritionScore(protein, fat, carbs, calories),
       recommendation: getNutritionRecommendation(protein, fat, carbs, calories)
     };
 
+    // ✅ LANGSUNG INSERT (TANPA CEK DUPLIKAT)
     await connection.execute(
-      'INSERT INTO food_predictions (food_name, category, protein, fat, carbs, calories, iron, vitamin_c, predicted_nutrition) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [food_name, category, protein, fat, carbs, calories, iron, vitamin_c, JSON.stringify(predictedNutrition)]
+      `INSERT INTO food_predictions
+       (food_name, category, calories, protein, carbs, fat, iron, vitamin_c, predicted_nutrition)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        food_name,
+        category,
+        calories,
+        protein,
+        carbs,
+        fat,
+        iron,
+        vitamin_c,
+        JSON.stringify(predictedNutrition)
+      ]
     );
 
-    connection.release();
-
     res.json({
       success: true,
-      data: predictedNutrition,
-      message: 'Prediksi gizi makanan berhasil'
+      message: 'Prediksi gizi berhasil disimpan',
+      data: predictedNutrition
     });
+
   } catch (error) {
-    console.error('Error processing food prediction:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Error processing food prediction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  } finally {
+    connection.release();
   }
 });
 
-app.post('/api/food-predictions', async (req, res) => {
-  try {
-    const { food_name, category, protein, fat, carbs, calories, iron, vitamin_c, predictedNutrition } = req.body;
-    
-    // Validasi input
-    if (!food_name || food_name.trim() === "") {
-      return res.status(400).json({
-        success: false,
-        error: "Nama makanan tidak boleh kosong"
-      });
-    }
-
-    if (!category || category.trim() === "") {
-      return res.status(400).json({
-        success: false,
-        error: "Kategori makanan tidak boleh kosong"
-      });
-    }
-
-    if (calories <= 0 || protein < 0 || fat < 0 || carbs < 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Nilai nutrisi harus berupa angka positif"
-      });
-    }
-
-    const connection = await pool.getConnection();
-
-    
-
-    connection.release();
-    
-    console.log('✅ Data berhasil disimpan:', { food_name, category, calories });
-
-    res.json({
-      success: true,
-      message: 'Prediksi gizi makanan berhasil disimpan ke database'
-    });
-  } catch (error) {
-    console.error('❌ Error saving food prediction:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
+// =======================
+// Get Food Predictions
+// =======================
 app.get('/api/food-predictions', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    const [predictions] = await connection.execute(
-      'SELECT * FROM food_predictions ORDER BY created_at DESC LIMIT 20'
-    );
-    connection.release();
+  const connection = await pool.getConnection();
 
-    const formattedPredictions = predictions.map(p => ({
-      ...p,
-      predicted_nutrition: typeof p.predicted_nutrition === 'string' 
-        ? JSON.parse(p.predicted_nutrition) 
-        : p.predicted_nutrition
+  try {
+    const [rows] = await connection.execute(
+      'SELECT * FROM food_predictions ORDER BY created_at DESC'
+    );
+
+    const formatted = rows.map(item => ({
+      ...item,
+      predicted_nutrition:
+        typeof item.predicted_nutrition === 'string'
+          ? JSON.parse(item.predicted_nutrition)
+          : item.predicted_nutrition
     }));
 
     res.json({
       success: true,
-      data: formattedPredictions
+      data: formatted
     });
+
   } catch (error) {
-    console.error('Error fetching food predictions:', error);
+    console.error('❌ Error fetching food predictions:', error);
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    connection.release();
   }
 });
 
+// =======================
 // Weight Predictions
+// =======================
 app.post('/api/weight-predictions', async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
-    const { height, gender, age, currentWeight, idealWeight, difference, status } = req.body;
-    const connection = await pool.getConnection();
+    const {
+      height,
+      gender,
+      age,
+      currentWeight,
+      idealWeight,
+      difference,
+      status
+    } = req.body;
 
     await connection.execute(
-      'INSERT INTO weight_predictions (height, gender, age, current_weight, ideal_weight, difference, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO weight_predictions
+       (height, gender, age, current_weight, ideal_weight, difference, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [height, gender, age, currentWeight, idealWeight, difference, status]
     );
 
-    connection.release();
-
     res.json({
       success: true,
-      message: 'Prediksi berat badan ideal berhasil disimpan ke database'
+      message: 'Prediksi berat badan berhasil disimpan'
     });
+
   } catch (error) {
-    console.error('Error saving weight prediction:', error);
+    console.error('❌ Error saving weight prediction:', error);
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    connection.release();
   }
 });
 
+// =======================
+// Get Weight Predictions
+// =======================
 app.get('/api/weight-predictions', async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
-    const connection = await pool.getConnection();
-    const [predictions] = await connection.execute(
-      'SELECT * FROM weight_predictions ORDER BY created_at DESC LIMIT 20'
+    const [rows] = await connection.execute(
+      'SELECT * FROM weight_predictions ORDER BY created_at DESC'
     );
-    connection.release();
 
     res.json({
       success: true,
-      data: predictions
+      data: rows
     });
+
   } catch (error) {
-    console.error('Error fetching weight predictions:', error);
+    console.error('❌ Error fetching weight predictions:', error);
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    connection.release();
   }
 });
 
-// Health check
+// =======================
+// Health Check
+// =======================
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'Server is running', timestamp: new Date() });
+  res.json({
+    status: 'Server is running',
+    time: new Date()
+  });
 });
 
+// =======================
+// Start Server
+// =======================
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`Database: ${process.env.DB_NAME || 'prediction_app'}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

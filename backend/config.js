@@ -3,6 +3,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// =======================
+// Connection Pool
+// =======================
 export const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -14,29 +17,37 @@ export const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// =======================
+// Init Database Tables
+// =======================
 export async function initDatabase() {
+  let connection;
+
   try {
-    const connection = await pool.getConnection();
-    
-    // Create food_predictions table
+    connection = await pool.getConnection();
+
+    // =======================
+    // food_predictions
+    // =======================
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS food_predictions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         food_name VARCHAR(255) NOT NULL,
         category VARCHAR(100) NOT NULL,
-        calories FLOAT,
-        protein FLOAT,
-        carbs FLOAT,
-        fat FLOAT,
-        iron FLOAT,
-        vitamin_c FLOAT,
+        calories FLOAT NOT NULL,
+        protein FLOAT NOT NULL,
+        carbs FLOAT NOT NULL,
+        fat FLOAT NOT NULL,
+        iron FLOAT DEFAULT 0,
+        vitamin_c FLOAT DEFAULT 0,
         predicted_nutrition JSON,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_food (food_name, category, calories, protein, fat, carbs)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Create weight_predictions table
+    // =======================
+    // weight_predictions
+    // =======================
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS weight_predictions (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -51,10 +62,12 @@ export async function initDatabase() {
       )
     `);
 
-    connection.release();
-    console.log('Database tables initialized successfully');
+    console.log('✅ Database tables initialized successfully');
+
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error('❌ Error initializing database:', error);
     throw error;
+  } finally {
+    if (connection) connection.release();
   }
 }
